@@ -7,7 +7,6 @@ end
 
 function _draw()
 -- Clear the screen
--- Clear the screen
 cls()
 
 -- Define scaling factor (adjust as needed)
@@ -18,6 +17,21 @@ local outerCircleRadius = 12 * scalingFactor
 local boardRadius = 4 * scalingFactor
 local middleCircleRadius = 8 * scalingFactor
 local centerHoleRadius = 1.375 * scalingFactor
+
+-- Draw the outer filled circle in red
+circfill(64, 64, outerCircleRadius, 8)  -- Color 8 is red
+
+
+-- Draw the middle filled circle in blue
+circfill(64, 64, middleCircleRadius, 12)  -- Color 12 is blue
+
+-- Draw the board filled circle in green
+
+circfill(64, 64, boardRadius, 11)  -- Color 11 is green
+
+-- Draw the inner filled circle (center hole) in black
+circfill(64, 64, centerHoleRadius, 0)  -- Color 0 is black
+
 
 -- Draw the outer circle
 circ(64, 64, outerCircleRadius, 7)
