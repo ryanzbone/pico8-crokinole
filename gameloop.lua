@@ -6,44 +6,44 @@ function _init()
 end
 
 function _draw()
- -- Clear the screen
-    cls()
+-- Clear the screen
+-- Clear the screen
+cls()
 
-    -- Define scaling factor (adjust as needed)
-    local scalingFactor = 3  -- Adjust this value based on your preference
+-- Define scaling factor (adjust as needed)
+local scalingFactor = 4  -- Adjust this value based on your preference
 
-    -- Define dimensions in inches
-    local outerCircleRadius = 12 * scalingFactor
-    local boardRadius = 4 * scalingFactor
-    local middleCircleRadius = 8 * scalingFactor
-    local centerHoleRadius = 1.375 * scalingFactor
+-- Define dimensions in inches
+local outerCircleRadius = 12 * scalingFactor
+local boardRadius = 4 * scalingFactor
+local middleCircleRadius = 8 * scalingFactor
+local centerHoleRadius = 1.375 * scalingFactor
 
-    -- Draw the outer circle
-    circ(64, 64, outerCircleRadius, 7)
+-- Draw the outer circle
+circ(64, 64, outerCircleRadius, 7)
 
-    -- Draw the board circle
-    circ(64, 64, boardRadius, 7)
+-- Draw the board circle
+circ(64, 64, boardRadius, 7)
 
-    -- Draw the middle circle
-    circ(64, 64, middleCircleRadius, 7)
+-- Draw the middle circle
+circ(64, 64, middleCircleRadius, 7)
 
-    -- Draw the inner circle (center hole)
-    circ(64, 64, centerHoleRadius, 7)
+-- Draw the inner circle (center hole)
+circ(64, 64, centerHoleRadius, 7)
 
-    -- Draw lines at 0, 90, 180, and 270 degrees
-    -- for _, angle in ipairs({0, 90, 180, 270}) do
-    --     local x1 = 64 + middleCircleRadius * cos(angle * 3.14159 / 180)
-    --     local y1 = 64 + middleCircleRadius * sin(angle * 3.14159 / 180)
-    --     local x2 = 64 + outerCircleRadius * cos(angle * 3.14159 / 180)
-    --     local y2 = 64 + outerCircleRadius * sin(angle * 3.14159 / 180)
-    --     line(x1, y1, x2, y2, 7)
-    -- end
+-- Draw lines at 45, 135, 225, and 315 degrees (in Pico-8's turns)
+local function drawRotatedLine(turns)
+    local x1 = 64 + middleCircleRadius * cos(turns)
+    local y1 = 64 - middleCircleRadius * sin(turns)
+    local x2 = 64 + outerCircleRadius * cos(turns)
+    local y2 = 64 - outerCircleRadius * sin(turns)
+    line(x1, y1, x2, y2, 7)
+end
 
-    line(64, 64 - middleCircleRadius, 64, 64 - outerCircleRadius, 7)
-    line(64 + middleCircleRadius, 64, 64 + outerCircleRadius, 64, 7)
-    line(64, 64 + middleCircleRadius, 64, 64 + outerCircleRadius, 7)
-    line(64 - middleCircleRadius, 64, 64 - outerCircleRadius, 64, 7)
-    
+drawRotatedLine(0.125)  -- 45 degrees
+drawRotatedLine(0.375)  -- 135 degrees
+drawRotatedLine(0.625)  -- 225 degrees
+drawRotatedLine(0.875)  -- 315 degrees
 
 end 
 
