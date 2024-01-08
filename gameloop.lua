@@ -2,12 +2,32 @@
 
 function _init()
     -- Initialize game state
-    
+    disc = {
+        x = 64,          -- Initial x position (bottom center of the board)
+        y = 120,         -- Initial y position (bottom center of the board)
+        radius = 2,      -- Disc radius
+        speed = 3,       -- Initial speed
+        angle = 0.75,      -- Initial angle (facing upward)
+        slowingFactor = .95,  -- Rate at which the disc slows down
+        shooting = false,  -- Flag to check if the disc is currently shooting
+    }
+        
 end
 
 function _draw()
+    cls()
+    drawBoard()
+    drawDisc()
+
+end
+
+function drawDisc()
+    circfill(disc.x, disc.y, disc.radius, 9)  -- Color 9 is yellow
+end
+
+
+function drawBoard()
 -- Clear the screen
-cls()
 
 -- Define scaling factor (adjust as needed)
 local scalingFactor = 4  -- Adjust this value based on your preference
@@ -62,6 +82,21 @@ drawRotatedLine(0.875)  -- 315 degrees
 end 
 
 function _update()
-    -- Update game logic
-end
+    if disc.shooting then
+        -- Update disc position and speed
+        disc.x = disc.x + disc.speed * cos(disc.angle)
+        disc.y = disc.y - disc.speed * sin(disc.angle)
+        disc.speed = disc.speed * disc.slowingFactor
 
+        -- Check if the disc has come to a stop
+        if disc.speed < 0.1 then
+            disc.shooting = false
+            disc.speed = 0
+        end
+    else
+        -- Player input to shoot the disc
+        if btnp(5) then  -- 'x' key
+            disc.shooting = true
+        end
+    end
+end
