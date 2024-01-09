@@ -9,14 +9,17 @@ function _init()
         innerCircleRadius = 4,   -- Inner circle radius
         centerHoleRadius = 0.8,  -- Center hole radius
         scalingFactor = 4,       -- Scaling factor
+        originX = 64,            -- Origin x position
+        originY = 64,            -- Origin y position
     }
 
     disc = {
-        x = 64,          -- Initial x position (center of the board)
-        y = 64 + (board.outerCircleRadius) * board.scalingFactor,  -- Initial y position (bottom center of the outer circle)
+        x = board.originX,          -- Initial x position (center of the board)
+        y = board.originY + (board.outerCircleRadius * board.scalingFactor),  -- Initial y position (bottom center of the outer circle)
         radius = 2,      -- Disc radius
         speed = 3,       -- Initial speed
         angle = 0.75,      -- Initial angle (facing upward)
+        positionAngle=0.75, -- Position on the outer board circle in turns
         slowingFactor = 0.95,  -- Rate at which the disc slows down
         state = "selectPosition",  -- Initial state
     }
@@ -44,35 +47,35 @@ function drawBoard(board)
     local scalingFactor = board.scalingFactor
 
     -- Draw the outer filled circle in red
-    circfill(64, 64, board.outerCircleRadius * scalingFactor, 8)  -- Color 8 is red
+    circfill(board.originX, board.originY, board.outerCircleRadius * scalingFactor, 8)  -- Color 8 is red
 
     -- Draw the middle filled circle in blue
-    circfill(64, 64, board.middleCircleRadius * scalingFactor, 12)  -- Color 12 is blue
+    circfill(board.originX, board.originY, board.middleCircleRadius * scalingFactor, 12)  -- Color 12 is blue
 
     -- Draw the board filled circle in green
-    circfill(64, 64, board.innerCircleRadius * scalingFactor, 11)  -- Color 11 is green
+    circfill(board.originX, board.originY, board.innerCircleRadius * scalingFactor, 11)  -- Color 11 is green
 
     -- Draw the inner filled circle (center hole) in black
-    circfill(64, 64, board.centerHoleRadius * scalingFactor, 0)  -- Color 0 is black
+    circfill(board.originX, board.originY, board.centerHoleRadius * scalingFactor, 0)  -- Color 0 is black
 
     -- Draw the outer circle
-    circ(64, 64, board.outerCircleRadius * scalingFactor, 7)
+    circ(board.originX, board.originY, board.outerCircleRadius * scalingFactor, 7)
 
     -- Draw the board circle
-    circ(64, 64, board.innerCircleRadius * scalingFactor, 7)
+    circ(board.originX, board.originY, board.innerCircleRadius * scalingFactor, 7)
 
     -- Draw the middle circle
-    circ(64, 64, board.middleCircleRadius * scalingFactor, 7)
+    circ(board.originX, board.originY, board.middleCircleRadius * scalingFactor, 7)
 
     -- Draw the inner circle (center hole)
-    circ(64, 64, board.centerHoleRadius * scalingFactor, 7)
+    circ(board.originX, board.originY, board.centerHoleRadius * scalingFactor, 7)
 
     -- Draw lines at 45, 135, 225, and 315 degrees (in Pico-8's turns)
     local function drawRotatedLine(turns)
-        local x1 = 64 + board.middleCircleRadius * scalingFactor * cos(turns)
-        local y1 = 64 - board.middleCircleRadius * scalingFactor * sin(turns)
-        local x2 = 64 + board.outerCircleRadius * scalingFactor * cos(turns)
-        local y2 = 64 - board.outerCircleRadius * scalingFactor * sin(turns)
+        local x1 = board.originX + board.middleCircleRadius * scalingFactor * cos(turns)
+        local y1 = board.originY - board.middleCircleRadius * scalingFactor * sin(turns)
+        local x2 = board.originX + board.outerCircleRadius * scalingFactor * cos(turns)
+        local y2 = board.originY - board.outerCircleRadius * scalingFactor * sin(turns)
         line(x1, y1, x2, y2, 7)
     end
 
@@ -84,14 +87,18 @@ end
 
 function chooseStartingPosition()
     -- Move the disc to the left
-    if btn(0) then
-        disc.x = disc.x - 1
+    if btn(0) and disc.positionAngle > 0.625 then
+        disc.positionAngle = disc.positionAngle - 0.01
     end
 
     -- Move the disc to the right
-    if btn(1)  then
-        disc.x = disc.x + 1
+    if btn(1) and disc.positionAngle < 0.875 then
+        disc.positionAngle = disc.positionAngle + 0.01
     end
+    
+    disc.x=board.originX + board.outerCircleRadius * cos(disc.positionAngle) * board.scalingFactor
+    disc.y=board.originY + board.outerCircleRadius * sin(disc.positionAngle) * board.scalingFactor
+
 
     -- Select position and move to angle selection
     if btnp(5) then  -- 'x' key
