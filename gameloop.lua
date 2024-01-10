@@ -14,15 +14,17 @@ function _init()
     }
 
     disc = {
-        x = board.originX,          -- Initial x position (center of the board)
+        x = board.originX, -- Initial x position (center of the board)
         y = board.originY + (board.outerCircleRadius * board.scalingFactor),  -- Initial y position (bottom center of the outer circle)
         radius = 2,      -- Disc radius
-        speed = 3,       -- Initial speed
+        speed = 6,       -- Initial speed
+        powerMultiplier = 0.5,  -- Power multiplier
         angle = 0.75,      -- Initial angle (facing upward)
         positionAngle=0.75, -- Position on the outer board circle in turns
         slowingFactor = 0.95,  -- Rate at which the disc slows down
         state = "selectPosition",  -- Initial state
     }
+    
 end
 
 function _draw()
@@ -41,22 +43,35 @@ function drawDisc()
             pset(x, y, 7)  -- Color 7 is white (dotted line)
         end
     end
+
+    -- draw power meter if in choosePower state with a horizontal white box filled with a green bar. 
+    -- The length of the green bar is the power multiplier
+    if disc.state == "choosePower" then
+        local powerMeterWidth = 20
+        local powerMeterHeight = 2
+        local powerMeterX = disc.x - powerMeterWidth / 2
+        local powerMeterY = disc.y + disc.radius * 2 + 1
+        rect(powerMeterX - 1, powerMeterY - 1, powerMeterX + powerMeterWidth + 1, powerMeterY + powerMeterHeight + 1, 7)  -- Color 7 is white
+        rectfill(powerMeterX, powerMeterY, powerMeterX + powerMeterWidth * disc.powerMultiplier, powerMeterY + powerMeterHeight, 11)  -- Color 11 is green
+    end
+
+
 end
 
 function drawBoard(board)
     local scalingFactor = board.scalingFactor
 
     -- Draw the outer filled circle in red
-    circfill(board.originX, board.originY, board.outerCircleRadius * scalingFactor, 8)  -- Color 8 is red
+    --circfill(board.originX, board.originY, board.outerCircleRadius * scalingFactor, 8)  -- Color 8 is red
 
     -- Draw the middle filled circle in blue
-    circfill(board.originX, board.originY, board.middleCircleRadius * scalingFactor, 12)  -- Color 12 is blue
+    --circfill(board.originX, board.originY, board.middleCircleRadius * scalingFactor, 12)  -- Color 12 is blue
 
     -- Draw the board filled circle in green
-    circfill(board.originX, board.originY, board.innerCircleRadius * scalingFactor, 11)  -- Color 11 is green
+    --circfill(board.originX, board.originY, board.innerCircleRadius * scalingFactor, 11)  -- Color 11 is green
 
     -- Draw the inner filled circle (center hole) in black
-    circfill(board.originX, board.originY, board.centerHoleRadius * scalingFactor, 0)  -- Color 0 is black
+    --circfill(board.originX, board.originY, board.centerHoleRadius * scalingFactor, 0)  -- Color 0 is black
 
     -- Draw the outer circle
     circ(board.originX, board.originY, board.outerCircleRadius * scalingFactor, 7)
@@ -121,9 +136,28 @@ function chooseShootingAngle()
     -- Ensure the angle is between 0 and 180 degrees
    -- disc.angle = mid(0, disc.angle, 180)
 
+    -- Shoot the disc and move to the choosePower state
+    if btnp(5) then  -- 'x' key
+        disc.state = "choosePower"
+    end
+end
+
+-- Function to choose the power multiplier between 0 and 1 for the disc which will be multiplied by the disc's speed
+function choosePower()
+    -- Increase the power multiplier
+    if btn(1) and disc.powerMultiplier < 1 then
+        disc.powerMultiplier = disc.powerMultiplier + 0.05
+    end
+
+    -- Decrease the power multiplier
+    if btn(0) and disc.powerMultiplier > 0 then
+        disc.powerMultiplier = disc.powerMultiplier - 0.05
+    end
+
     -- Shoot the disc and move to the moving state
     if btnp(5) then  -- 'x' key
         disc.state = "moving"
+        disc.speed = disc.speed * disc.powerMultiplier
     end
 end
 
@@ -133,6 +167,8 @@ function shootDisc()
         chooseStartingPosition()
     elseif disc.state == "selectAngle" then
         chooseShootingAngle()
+    elseif disc.state == "choosePower" then
+        choosePower()
     elseif disc.state == "moving" then
         moveDisc()
     elseif disc.state == "stopped" then
