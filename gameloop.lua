@@ -1,5 +1,7 @@
 -- Pico-8 game template
 
+
+
 function _init()
     -- Initialize game state
    
@@ -12,8 +14,13 @@ function _init()
         originX = 64,            -- Origin x position
         originY = 64,            -- Origin y position
     }
+    -- initialize discs collection, add a disc to it via addDisc   
+    discs = {}
+    addDisc()
+end
 
-    disc = {
+function addDisc()
+    local disc = {
         x = board.originX, -- Initial x position (center of the board)
         y = board.originY + (board.outerCircleRadius * board.scalingFactor),  -- Initial y position (bottom center of the outer circle)
         radius = 2,      -- Disc radius
@@ -24,16 +31,22 @@ function _init()
         slowingFactor = 0.95,  -- Rate at which the disc slows down
         state = "selectPosition",  -- Initial state
     }
-    
+    add(discs, disc)
 end
 
 function _draw()
     cls()
     drawBoard(board)
-    drawDisc()
+    drawDiscs()
 end
 
-function drawDisc()
+function drawDiscs()
+    for i, disc in pairs(discs) do
+        drawSingleDisc(disc)
+    end
+end
+
+function drawSingleDisc(disc)
     circfill(disc.x, disc.y, disc.radius, 9)  -- Color 9 is yellow
     if disc.state == "selectAngle" then
         local lineLength = 5
@@ -54,8 +67,6 @@ function drawDisc()
         rect(powerMeterX - 1, powerMeterY - 1, powerMeterX + powerMeterWidth + 1, powerMeterY + powerMeterHeight + 1, 7)  -- Color 7 is white
         rectfill(powerMeterX, powerMeterY, powerMeterX + powerMeterWidth * disc.powerMultiplier, powerMeterY + powerMeterHeight, 11)  -- Color 11 is green
     end
-
-
 end
 
 function drawBoard(board)
@@ -100,7 +111,7 @@ function drawBoard(board)
     drawRotatedLine(0.875)  -- 315 degrees
 end
 
-function chooseStartingPosition()
+function chooseStartingPosition(disc)
     -- Move the disc to the left
     if btn(0) and disc.positionAngle > 0.625 then
         disc.positionAngle = disc.positionAngle - 0.01
@@ -122,7 +133,7 @@ function chooseStartingPosition()
 end
 
 -- Function to choose the shooting angle between 0 and 180 degrees
-function chooseShootingAngle()
+function chooseShootingAngle(disc)
     -- Rotate the disc angle to the left
     if btn(0) then
         disc.angle = disc.angle - 0.01
@@ -133,9 +144,6 @@ function chooseShootingAngle()
         disc.angle = disc.angle + 0.01
     end
 
-    -- Ensure the angle is between 0 and 180 degrees
-   -- disc.angle = mid(0, disc.angle, 180)
-
     -- Shoot the disc and move to the choosePower state
     if btnp(5) then  -- 'x' key
         disc.state = "choosePower"
@@ -143,7 +151,7 @@ function chooseShootingAngle()
 end
 
 -- Function to choose the power multiplier between 0 and 1 for the disc which will be multiplied by the disc's speed
-function choosePower()
+function choosePower(disc)
     -- Increase the power multiplier
     if btn(1) and disc.powerMultiplier < 1 then
         disc.powerMultiplier = disc.powerMultiplier + 0.05
@@ -162,21 +170,21 @@ function choosePower()
 end
 
 -- Function to shoot the disc and transition between states
-function shootDisc()
+function shootDisc(disc)
     if disc.state == "selectPosition" then
-        chooseStartingPosition()
+        chooseStartingPosition(disc)
     elseif disc.state == "selectAngle" then
-        chooseShootingAngle()
+        chooseShootingAngle(disc)
     elseif disc.state == "choosePower" then
-        choosePower()
+        choosePower(disc)
     elseif disc.state == "moving" then
-        moveDisc()
+        moveDisc(disc)
     elseif disc.state == "stopped" then
-        -- make a new disc
+        -- do nothing
     end
 end
 
-function moveDisc()
+function moveDisc(disc)
     -- Update disc position and speed
     disc.x = disc.x + disc.speed * cos(disc.angle)
     disc.y = disc.y - disc.speed * sin(disc.angle)
@@ -191,5 +199,16 @@ function moveDisc()
 end
 -- Main update function
 function _update()
-    shootDisc()
+    updateDiscs()
+    -- if every disc is stopped, add a new disc
+    if discs[#discs].state == "stopped" then
+        addDisc()
+    end
+end
+
+-- update discs collection
+function updateDiscs()
+    for i, disc in pairs(discs) do
+        shootDisc(disc)
+    end
 end
