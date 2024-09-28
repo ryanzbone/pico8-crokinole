@@ -1,7 +1,5 @@
 -- Pico-8 game template
 
-
-
 function _init()
     -- Initialize game state
    
@@ -30,6 +28,10 @@ function addDisc()
         positionAngle=0.75, -- Position on the outer board circle in turns
         slowingFactor = 0.95,  -- Rate at which the disc slows down
         state = "selectPosition",  -- Initial state
+        color = 2,  -- Initial color (red)
+        vx = 0,  -- x velocity
+        vy = 0,  -- y velocity
+        mass = 1,  -- mass of the disc (all discs have the same mass for simplicity)
     }
     add(discs, disc)
 end
@@ -47,7 +49,7 @@ function drawDiscs()
 end
 
 function drawSingleDisc(disc)
-    circfill(disc.x, disc.y, disc.radius, 9)  -- Color 9 is yellow
+    circfill(disc.x, disc.y, disc.radius, disc.color)  -- Color 9 is yellow
     if disc.state == "selectAngle" then
         local lineLength = 5
         for i = 0, lineLength, 0.5 do
@@ -71,18 +73,6 @@ end
 
 function drawBoard(board)
     local scalingFactor = board.scalingFactor
-
-    -- Draw the outer filled circle in red
-    --circfill(board.originX, board.originY, board.outerCircleRadius * scalingFactor, 8)  -- Color 8 is red
-
-    -- Draw the middle filled circle in blue
-    --circfill(board.originX, board.originY, board.middleCircleRadius * scalingFactor, 12)  -- Color 12 is blue
-
-    -- Draw the board filled circle in green
-    --circfill(board.originX, board.originY, board.innerCircleRadius * scalingFactor, 11)  -- Color 11 is green
-
-    -- Draw the inner filled circle (center hole) in black
-    --circfill(board.originX, board.originY, board.centerHoleRadius * scalingFactor, 0)  -- Color 0 is black
 
     -- Draw the outer circle
     circ(board.originX, board.originY, board.outerCircleRadius * scalingFactor, 7)
@@ -165,10 +155,11 @@ function choosePower(disc)
     -- Shoot the disc and move to the moving state
     if btnp(5) then  -- 'x' key
         disc.state = "moving"
-        disc.speed = disc.speed * disc.powerMultiplier
+        local speed = disc.speed * disc.powerMultiplier
+        disc.vx = speed * cos(disc.angle)
+        disc.vy = -speed * sin(disc.angle)
     end
 end
-
 -- Function to shoot the disc and transition between states
 function shootDisc(disc)
     if disc.state == "selectPosition" then
@@ -185,18 +176,98 @@ function shootDisc(disc)
 end
 
 function moveDisc(disc)
-    -- Update disc position and speed
-    disc.x = disc.x + disc.speed * cos(disc.angle)
-    disc.y = disc.y - disc.speed * sin(disc.angle)
-    disc.speed = disc.speed * disc.slowingFactor
-
-    -- Check if the disc has come to a stop
-    if disc.speed < 0.1 then
-        disc.state = "stopped"
-        disc.speed = 0
+    -- Update position based on velocity
+    local newX = disc.x + disc.vx
+    local newY = disc.y + disc.vy
+    
+    local collision = false
+    for i, otherDisc in pairs(discs) do
+        if otherDisc ~= disc and otherDisc.state ~= "selectPosition" then
+            if checkCollision({x=newX, y=newY, radius=disc.radius}, otherDisc) then
+                collision = true
+                resolveCollision(disc, otherDisc)
+                -- Set the other disc to "moving" state if it was stopped
+                if otherDisc.state == "stopped" then
+                    otherDisc.state = "moving"
+                    otherDisc.color = 2  -- Change color back to red (or whatever color you use for moving discs)
+                end
+            end
+        end
     end
-
+    
+    -- Update position
+    disc.x = newX
+    disc.y = newY
+    
+    -- Apply friction
+    local friction = 0.95
+    disc.vx = disc.vx * friction
+    disc.vy = disc.vy * friction
+    
+    -- Check if the disc has come to a stop
+    if abs(disc.vx) < 0.1 and abs(disc.vy) < 0.1 then
+        disc.state = "stopped"
+        disc.vx = 0
+        disc.vy = 0
+        disc.color = 12  -- Change color to blue
+    end
 end
+function resolveCollision(disc1, disc2)
+    local dx = disc2.x - disc1.x
+    local dy = disc2.y - disc1.y
+    local distance = sqrt(dx*dx + dy*dy)
+    
+    -- Normal vector
+    local nx = dx / distance
+    local ny = dy / distance
+    
+    -- Relative velocity
+    local rvx = disc2.vx - disc1.vx
+    local rvy = disc2.vy - disc1.vy
+    
+    -- Velocity along the normal
+    local velAlongNormal = rvx * nx + rvy * ny
+    
+    -- Do not resolve if velocities are separating
+    if velAlongNormal > 0 then return end
+    
+    -- Coefficient of restitution (1 for perfectly elastic collisions)
+    local e = 0.8
+    
+    -- Calculate impulse scalar
+    local j = -(1 + e) * velAlongNormal
+    j = j / (1/disc1.mass + 1/disc2.mass)
+    
+    -- Apply impulse
+    disc1.vx = disc1.vx - (j * nx) / disc1.mass
+    disc1.vy = disc1.vy - (j * ny) / disc1.mass
+    disc2.vx = disc2.vx + (j * nx) / disc2.mass
+    disc2.vy = disc2.vy + (j * ny) / disc2.mass
+    
+    -- Move discs apart to prevent sticking
+    local percent = 0.2 -- usually 20% to 80% of the overlap
+    local slop = 0.01 -- usually 0.01 to 0.1
+    local penetration = 2 * disc1.radius - distance
+    if penetration > slop then
+        local correction = (penetration / (disc1.mass + disc2.mass)) * percent
+        disc1.x = disc1.x - correction * nx * disc1.mass
+        disc1.y = disc1.y - correction * ny * disc1.mass
+        disc2.x = disc2.x + correction * nx * disc2.mass
+        disc2.y = disc2.y + correction * ny * disc2.mass
+    end
+end
+
+
+-- Function to check if two discs are colliding
+function checkCollision(disc1, disc2)
+    local distance = sqrt((disc1.x - disc2.x)^2 + (disc1.y - disc2.y)^2)
+    if distance < disc1.radius + disc2.radius then
+        return true
+    else
+        return false
+    end
+end
+
 -- Main update function
 function _update()
     updateDiscs()
